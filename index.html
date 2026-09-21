@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Digital Twin - Cabina MT/BT 2.5 MW (Tesi Magistrale - Modello IEC 60076-7)</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background-color: #0d1117;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      user-select: none;
+    }
+
+    #header-bar {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      color: #f0f6fc;
+      background: rgba(22, 27, 34, 0.92);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(8px);
+      padding: 12px 18px;
+      border-radius: 6px;
+      font-size: 13px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+      z-index: 10;
+    }
+
+    #diag-counter {
+      margin-top: 5px;
+      font-size: 11px;
+      color: #3fb950;
+      font-family: monospace;
+    }
+
+    #telemetry-panel {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      width: 330px;
+      background: rgba(22, 27, 34, 0.94);
+      border: 1px solid rgba(88, 166, 255, 0.3);
+      backdrop-filter: blur(10px);
+      color: #f0f6fc;
+      border-radius: 8px;
+      padding: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+      z-index: 10;
+    }
+    .panel-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #58a6ff;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding-bottom: 6px;
+      margin-bottom: 10px;
+    }
+    .metric-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 6px;
+      font-size: 12px;
+    }
+    .metric-value {
+      font-weight: bold;
+      color: #3fb950;
+      transition: color 0.2s;
+    }
+    .btn-group {
+      display: flex;
+      gap: 5px;
+      margin-top: 12px;
+    }
+    .btn-action {
+      flex: 1;
+      padding: 7px 2px;
+      background: #21262d;
+      border: 1px solid #30363d;
+      color: #c9d1d9;
+      font-size: 11.5px;
+      font-weight: 600;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .btn-action:hover {
+      background: #388bfd;
+      color: white;
+    }
+
+    #bottom-toolbar {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(235, 238, 242, 0.96);
+      border: 1px solid #c0c6cc;
+      box-shadow: 0 6px 22px rgba(0, 0, 0, 0.35);
+      border-radius: 8px;
+      padding: 8px 16px;
+      z-index: 10;
+    }
+
+    .gradient-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 230px;
+    }
+    .gradient-bar {
+      width: 100%;
+      height: 9px;
+      border-radius: 4px;
+      background: linear-gradient(to right, #0022ff 0%, #00d4ff 25%, #00ff44 50%, #ffe600 75%, #ff1100 100%);
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.3);
+    }
+    .gradient-labels {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      margin-top: 3px;
+      font-size: 10px;
+      font-weight: 600;
+      color: #333333;
+    }
+
+    .player-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      border-left: 1px solid #bcc3cc;
+      border-right: 1px solid #bcc3cc;
+      padding: 0 10px;
+    }
+    .btn-ctrl {
+      background: #1c2128;
+      border: 1px solid #444c56;
+      color: #ffffff;
+      border-radius: 4px;
+      padding: 5px 8px;
+      font-size: 11px;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn-ctrl:hover {
+      background: #388bfd;
+    }
+    .timeline-slider {
+      width: 110px;
+      cursor: pointer;
+    }
+    #time-display {
+      font-size: 11px;
+      font-weight: bold;
+      color: #24292f;
+      min-width: 60px;
+      text-align: center;
+    }
+
+    .select-dropdown {
+      background: #1c2128;
+      color: #ffffff;
+      border: 1px solid #444c56;
+      border-radius: 4px;
+      padding: 5px 8px;
+      font-size: 11.5px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-eye {
+      background: #1c2128;
+      border: 1px solid #444c56;
+      color: #ffffff;
+      border-radius: 4px;
+      padding: 6px 9px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      transition: 0.2s;
+    }
+    .btn-eye.active {
+      background: #1f6feb;
+      border-color: #58a6ff;
+    }
+    .btn-eye svg {
+      width: 15px;
+      height: 15px;
+      fill: currentColor;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="header-bar">
+    <strong style="color: #58a6ff;">Digital Twin Microgrid 2.5 MW</strong><br>
+    BIM-SCADA Integration - 2x ABB 1500 kVA (IEC 60076-7)
+    <div id="diag-counter">Sensori IoT: inizializzazione...</div>
+  </div>
+
+  <div id="telemetry-panel">
+    <div class="panel-title" id="comp-title">Panoramica Cabina di Stabilimento</div>
+    <div class="metric-row">
+      <span>Stato Diagnostico:</span>
+      <span class="metric-value" id="val-status">NOMINALE (Nessuna Anomalia)</span>
+    </div>
+    <div class="metric-row">
+      <span>Fattore di Carico K:</span>
+      <span class="metric-value" id="val-load">40.0 %</span>
+    </div>
+    <div class="metric-row">
+      <span>Corrente Lato BT (I):</span>
+      <span class="metric-value" id="val-current">866 A</span>
+    </div>
+    <div class="metric-row">
+      <span>Temp. Hot-Spot (Ths):</span>
+      <span class="metric-value" id="val-temp" style="color: #3fb950;">44.8 °C</span>
+    </div>
+    <div class="metric-row">
+      <span>Tasso Invecch. V(t):</span>
+      <span class="metric-value" id="val-rate">0.002 (Basale)</span>
+    </div>
+    <div class="metric-row">
+      <span>State of Health (SoH):</span>
+      <span class="metric-value" id="val-soh">99.998 %</span>
+    </div>
+    <div class="metric-row">
+      <span>RUL Residua Stimata:</span>
+      <span class="metric-value" id="val-rul" style="color: #58a6ff;">14.2 Anni</span>
+    </div>
+    <div class="metric-row">
+      <span>Registro Modbus:</span>
+      <span class="metric-value" id="val-modbus" style="color: #c9d1d9;">HR 41001</span>
+    </div>
+
+    <div class="btn-group">
+      <button class="btn-action" id="btn-sel-tr1">Focus TR1</button>
+      <button class="btn-action" id="btn-sel-tr2">Focus TR2</button>
+      <button class="btn-action" id="btn-sel-all">Panoramica</button>
+    </div>
+  </div>
+
+  <div id="bottom-toolbar">
+    <div class="gradient-container">
+      <div class="gradient-bar"></div>
+      <div class="gradient-labels" id="gradient-labels">
+        <span>20°C</span>
+        <span>45°C</span>
+        <span>70°C</span>
+        <span>98°C</span>
+        <span>110°C+</span>
+      </div>
+    </div>
+
+    <div class="player-controls">
+      <button class="btn-ctrl" id="btn-play">▶ Play</button>
+      <button class="btn-ctrl" id="btn-speed">1x</button>
+      <input type="range" class="timeline-slider" id="time-slider" min="0" max="1440" value="0">
+      <span id="time-display">00:00 h</span>
+    </div>
+
+    <select class="select-dropdown" id="sel-metric">
+      <option value="temp" selected>Temperature (Ths) ▾</option>
+      <option value="current">Current I (A) ▾</option>
+      <option value="loss">Aging Rate V(t) ▾</option>
+    </select>
+
+    <select class="select-dropdown" id="sel-horizon">
+      <option value="1440" selected>Ciclo 24h (Sovracc. 115%)</option>
+      <option value="180">3 hrs (Transitorio)</option>
+      <option value="60">1 hr (Dettaglio)</option>
+    </select>
+
+    <button class="btn-eye active" id="btn-toggle-eye" title="Attiva/Disattiva Heatmap">
+      <svg viewBox="0 0 24 24">
+        <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+      </svg>
+    </button>
+  </div>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xdce2ea);
+
+    const camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.25;
+    document.body.appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+
+    scene.add(new THREE.AmbientLight(0xffffff, 1.5));
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.8);
+    dirLight.position.set(25, 35, 20);
+    scene.add(dirLight);
+
+    let modelGroup = null;
+    let isHeatmapActive = true;
+    let currentTarget = 'ALL';
+    let currentMetric = 'temp';
+
+    const originalMaterials = new Map();
+    const tr1Meshes = [];
+    const tr2Meshes = [];
+
+    let isPlaying = false;
+    let playSpeed = 1;
+    let simTimeMinutes = 0;
+    let maxSimMinutes = 1440;
+
+    // Palette cromatica: a t >= 0.82 scatta il rosso fuoco pieno
+    function evaluateColor(normVal) {
+      const t = Math.min(Math.max(normVal, 0), 1);
+      const c = new THREE.Color();
+      if (t < 0.25) {
+        c.setRGB(0, t * 4, 1); // Blu -> Ciano
+      } else if (t < 0.5) {
+        c.setRGB(0, 1, 1 - (t - 0.25) * 4); // Ciano -> Verde
+      } else if (t < 0.75) {
+        c.setRGB((t - 0.5) * 4, 1, 0); // Verde -> Giallo
+      } else {
+        // Giallo -> Rosso vivo
+        const rFrac = (t - 0.75) / 0.25;
+        c.setRGB(1, Math.max(0, 1 - rFrac * 1.5), 0);
+      }
+      return c;
+    }
+
+    const loader = new GLTFLoader();
+    loader.load('./cabina_elettrica.glb', (gltf) => {
+      modelGroup = gltf.scene;
+
+      const totalBox = new THREE.Box3().setFromObject(modelGroup);
+      const center = totalBox.getCenter(new THREE.Vector3());
+      const size = totalBox.getSize(new THREE.Vector3());
+
+      modelGroup.position.x = -center.x;
+      modelGroup.position.y = -totalBox.min.y;
+      modelGroup.position.z = -center.z;
+      scene.add(modelGroup);
+      scene.updateMatrixWorld(true);
+
+      // FILTRO ROBUSTO DEL VIDEO ORIGINALE: solo muri grandi e pavimento esclusi
+      modelGroup.traverse((child) => {
+        if (child.isMesh) {
+          originalMaterials.set(child, child.material);
+
+          const wBox = new THREE.Box3().setFromObject(child);
+          const wCenter = wBox.getCenter(new THREE.Vector3());
+          const wSize = wBox.getSize(new THREE.Vector3());
+
+          // Esclude le pareti perimetrali esterne e il pavimento (> 3.2 m)
+          const isLargeStructure = (wSize.x > 3.2 || wSize.z > 3.2 || wSize.y > 3.2);
+
+          if (!isLargeStructure && wCenter.y > 0.05) {
+            if (wCenter.x < 0.7) {
+              tr1Meshes.push(child);
+            } else {
+              tr2Meshes.push(child);
+            }
+
+            child._heatMat = new THREE.MeshStandardMaterial({
+              roughness: 0.35,
+              metalness: 0.1
+            });
+          }
+        }
+      });
+
+      const diagEl = document.getElementById('diag-counter');
+      if (diagEl) {
+        diagEl.innerText = `Modello conforme Tesi: TR1 (${tr1Meshes.length} parti) | TR2 (${tr2Meshes.length} parti)`;
+      }
+
+      camera.position.set(size.x * 0.9, size.y * 1.8, size.z * 1.5);
+      controls.target.set(0, size.y * 0.35, 0);
+      camera.lookAt(controls.target);
+      controls.update();
+
+      updateSimulationState();
+    });
+
+    // Serie temporali esatte Tabella 3.3 della Tesi
+    function getThesisTelemetry(minute) {
+      const h = minute / 60;
+
+      let loadK, currentA, tempHotSpot, agingV, sohPercent;
+
+      if (h <= 6.0) {
+        loadK = 40.0;
+        currentA = 866;
+        tempHotSpot = 44.8 - (h / 6.0) * 0.5;
+        agingV = 0.002;
+        sohPercent = 99.999 - (h / 24.0) * 0.001;
+      } else if (h <= 11.0) {
+        const frac = (h - 6.0) / 5.0;
+        loadK = 40.0 + frac * 50.0;
+        currentA = 866 + frac * (1948 - 866);
+        tempHotSpot = 44.3 + frac * (92.5 - 44.3);
+        agingV = Math.pow(2, (tempHotSpot - 98) / 6);
+        sohPercent = 99.998 - frac * 0.008;
+      } else if (h <= 14.0) {
+        const frac = (h - 11.0) / 3.0;
+        loadK = 90.0 + frac * 10.0;
+        currentA = 1948 + frac * (2165 - 1948);
+        tempHotSpot = 92.5 + frac * (101.2 - 92.5);
+        agingV = Math.pow(2, (tempHotSpot - 98) / 6);
+        sohPercent = 99.990 - frac * 0.012;
+      } else if (h <= 16.0) {
+        // FINESTRA SOVRACCARICO FORZATO 115%
+        const frac = (h - 14.0) / 2.0;
+        loadK = 115.0;
+        currentA = 2490;
+        tempHotSpot = 101.2 + frac * (111.8 - 101.2); // Raggiunge 111.8°C
+        agingV = Math.pow(2, (tempHotSpot - 98) / 6); // Raggiunge 4.92
+        sohPercent = 99.978 - frac * 0.048;
+      } else if (h <= 18.0) {
+        const frac = (h - 16.0) / 2.0;
+        loadK = 115.0 - frac * 35.0;
+        currentA = 2490 - frac * (2490 - 1732);
+        tempHotSpot = 111.8 - frac * (111.8 - 88.7);
+        agingV = Math.pow(2, (tempHotSpot - 98) / 6);
+        sohPercent = 99.930 - frac * 0.005;
+      } else if (h <= 21.0) {
+        const frac = (h - 18.0) / 3.0;
+        loadK = 80.0 - frac * 30.0;
+        currentA = 1732 - frac * (1732 - 1082);
+        tempHotSpot = 88.7 - frac * (88.7 - 62.1);
+        agingV = Math.pow(2, (tempHotSpot - 98) / 6);
+        sohPercent = 99.925 - frac * 0.003;
+      } else {
+        const frac = (h - 21.0) / 3.0;
+        loadK = 50.0 - frac * 10.0;
+        currentA = 1082 - frac * (1082 - 866);
+        tempHotSpot = 62.1 - frac * (62.1 - 50.8);
+        agingV = Math.pow(2, (tempHotSpot - 98) / 6);
+        sohPercent = 99.922 - frac * 0.002;
+      }
+
+      return { loadK, currentA, tempHotSpot, agingV, sohPercent };
+    }
+
+    function updateSimulationState() {
+      const dataTR1 = getThesisTelemetry(simTimeMinutes);
+      
+      const dataTR2 = {
+        loadK: Math.min(dataTR1.loadK * 0.9, 85.0),
+        currentA: Math.round(Math.min(dataTR1.currentA * 0.9, 1850)),
+        tempHotSpot: Math.min(dataTR1.tempHotSpot * 0.85, 76.0),
+        agingV: 0.08,
+        sohPercent: 99.960
+      };
+
+      // CALIBRAZIONE PRECISA: a 105°C normVal è 0.85 (rosso chiaro), a 111.8°C supera 0.93 (rosso fuoco pieno)
+      let norm1 = 0, norm2 = 0;
+      if (currentMetric === 'temp') {
+        norm1 = (dataTR1.tempHotSpot - 20) / (115 - 20);
+        norm2 = (dataTR2.tempHotSpot - 20) / (115 - 20);
+      } else if (currentMetric === 'current') {
+        norm1 = dataTR1.currentA / 2490;
+        norm2 = dataTR2.currentA / 2490;
+      } else if (currentMetric === 'loss') {
+        norm1 = Math.min(dataTR1.agingV / 4.5, 1.0);
+        norm2 = Math.min(dataTR2.agingV / 4.5, 1.0);
+      }
+
+      const isAnomalyTR1 = (dataTR1.tempHotSpot > 105.0);
+
+      // Applicazione cromatica
+      if (isHeatmapActive) {
+        const c1 = evaluateColor(norm1);
+        tr1Meshes.forEach((mesh) => {
+          mesh._heatMat.color.copy(c1);
+          mesh._heatMat.emissive.copy(c1);
+          mesh._heatMat.emissiveIntensity = isAnomalyTR1 ? 0.9 : 0.25;
+          mesh.material = mesh._heatMat;
+        });
+
+        const c2 = evaluateColor(norm2);
+        tr2Meshes.forEach((mesh) => {
+          mesh._heatMat.color.copy(c2);
+          mesh._heatMat.emissive.copy(c2);
+          mesh._heatMat.emissiveIntensity = 0.2;
+          mesh.material = mesh._heatMat;
+        });
+      } else {
+        tr1Meshes.forEach(m => m.material = originalMaterials.get(m));
+        tr2Meshes.forEach(m => m.material = originalMaterials.get(m));
+      }
+
+      // Telemetria UI
+      const title = document.getElementById('comp-title');
+      const status = document.getElementById('val-status');
+      const load = document.getElementById('val-load');
+      const cur = document.getElementById('val-current');
+      const temp = document.getElementById('val-temp');
+      const rate = document.getElementById('val-rate');
+      const soh = document.getElementById('val-soh');
+      const rul = document.getElementById('val-rul');
+      const modbus = document.getElementById('val-modbus');
+
+      if (currentTarget === 'TR1') {
+        title.innerText = 'TR1 - ABB 1500 kVA (20/0.4 kV)';
+        title.style.color = '#58a6ff';
+        status.innerText = isAnomalyTR1 ? 'ALLARME TERMICO (Anomaly Detection)' : 'NOMINALE (Nessuna Anomalia)';
+        status.style.color = isAnomalyTR1 ? '#ff474a' : '#3fb950';
+        load.innerText = dataTR1.loadK.toFixed(1) + ' %';
+        cur.innerText = Math.round(dataTR1.currentA) + ' A';
+        temp.innerText = dataTR1.tempHotSpot.toFixed(1) + ' °C';
+        temp.style.color = isAnomalyTR1 ? '#ff474a' : (dataTR1.tempHotSpot > 85 ? '#ff9500' : '#3fb950');
+        rate.innerText = dataTR1.agingV.toFixed(3) + ' x nom.';
+        rate.style.color = (dataTR1.agingV > 1.0) ? '#ff474a' : '#3fb950';
+        soh.innerText = dataTR1.sohPercent.toFixed(3) + ' %';
+        rul.innerText = '14.2 Anni';
+        modbus.innerText = 'HR 41001 (Pset_Transformer_IoT)';
+      } else if (currentTarget === 'TR2') {
+        title.innerText = 'TR2 - ABB 1500 kVA (20/0.4 kV)';
+        title.style.color = '#58a6ff';
+        status.innerText = 'NOMINALE (Nessuna Anomalia)';
+        status.style.color = '#3fb950';
+        load.innerText = dataTR2.loadK.toFixed(1) + ' %';
+        cur.innerText = dataTR2.currentA + ' A';
+        temp.innerText = dataTR2.tempHotSpot.toFixed(1) + ' °C';
+        temp.style.color = '#3fb950';
+        rate.innerText = dataTR2.agingV.toFixed(3) + ' x nom.';
+        rate.style.color = '#3fb950';
+        soh.innerText = dataTR2.sohPercent.toFixed(3) + ' %';
+        rul.innerText = '13.8 Anni';
+        modbus.innerText = 'HR 41002 (Pset_Transformer_IoT)';
+      } else {
+        title.innerText = 'Cabina Principale 2.5 MW (Baricentro QGBT)';
+        title.style.color = '#f0f6fc';
+        status.innerText = isAnomalyTR1 ? 'ALLARME: Sovraccarico su TR1' : 'A regime regolare (Parallel Mode)';
+        status.style.color = isAnomalyTR1 ? '#ff474a' : '#3fb950';
+        load.innerText = ((dataTR1.loadK + dataTR2.loadK) / 2).toFixed(1) + ' % medio';
+        cur.innerText = Math.round(dataTR1.currentA + dataTR2.currentA) + ' A (Totale BT)';
+        temp.innerText = `TR1: ${dataTR1.tempHotSpot.toFixed(1)}°C | TR2: ${dataTR2.tempHotSpot.toFixed(1)}°C`;
+        temp.style.color = isAnomalyTR1 ? '#ff474a' : '#3fb950';
+        rate.innerText = `TR1: ${dataTR1.agingV.toFixed(2)}x | TR2: ${dataTR2.agingV.toFixed(2)}x`;
+        rate.style.color = isAnomalyTR1 ? '#ff474a' : '#3fb950';
+        soh.innerText = `TR1: ${dataTR1.sohPercent.toFixed(3)}% | TR2: ${dataTR2.sohPercent.toFixed(3)}%`;
+        rul.innerText = 'TR1: 14.2a | TR2: 13.8a | QGBT: 3.1a';
+        modbus.innerText = 'QGBT HR 40101 | ATS HR 40401';
+      }
+
+      document.getElementById('time-slider').value = simTimeMinutes;
+      const hrs = Math.floor(simTimeMinutes / 60);
+      const mins = Math.floor(simTimeMinutes % 60);
+      document.getElementById('time-display').innerText = 
+        String(hrs).padStart(2, '0') + ':' + String(mins).padStart(2, '0') + ' h';
+    }
+
+    document.getElementById('sel-metric').addEventListener('change', (e) => {
+      currentMetric = e.target.value;
+      const labels = document.getElementById('gradient-labels');
+      if (currentMetric === 'temp') {
+        labels.innerHTML = '<span>20°C</span><span>45°C</span><span>70°C</span><span>98°C</span><span>110°C+</span>';
+      } else if (currentMetric === 'current') {
+        labels.innerHTML = '<span>0 A</span><span>650 A</span><span>1300 A</span><span>1950 A</span><span>2490 A</span>';
+      } else if (currentMetric === 'loss') {
+        labels.innerHTML = '<span>0.1x</span><span>0.5x</span><span>1.0x (98°C)</span><span>2.5x</span><span>4.9x</span>';
+      }
+      updateSimulationState();
+    });
+
+    document.getElementById('sel-horizon').addEventListener('change', (e) => {
+      maxSimMinutes = parseInt(e.target.value);
+      const slider = document.getElementById('time-slider');
+      slider.max = maxSimMinutes;
+      if (simTimeMinutes > maxSimMinutes) simTimeMinutes = 0;
+      updateSimulationState();
+    });
+
+    const playBtn = document.getElementById('btn-play');
+    playBtn.addEventListener('click', () => {
+      isPlaying = !isPlaying;
+      playBtn.innerText = isPlaying ? '⏸ Pausa' : '▶ Play';
+      playBtn.style.background = isPlaying ? '#238636' : '#1c2128';
+    });
+
+    const speedBtn = document.getElementById('btn-speed');
+    speedBtn.addEventListener('click', () => {
+      if (playSpeed === 1) playSpeed = 2;
+      else if (playSpeed === 2) playSpeed = 4;
+      else playSpeed = 1;
+      speedBtn.innerText = playSpeed + 'x';
+    });
+
+    document.getElementById('time-slider').addEventListener('input', (e) => {
+      simTimeMinutes = parseFloat(e.target.value);
+      updateSimulationState();
+    });
+
+    const eyeBtn = document.getElementById('btn-toggle-eye');
+    eyeBtn.addEventListener('click', () => {
+      isHeatmapActive = !isHeatmapActive;
+      eyeBtn.classList.toggle('active', isHeatmapActive);
+      updateSimulationState();
+    });
+
+    document.getElementById('btn-sel-tr1').addEventListener('click', () => {
+      currentTarget = 'TR1';
+      updateSimulationState();
+      controls.target.set(-1.2, 1.2, 1.2);
+      controls.update();
+    });
+
+    document.getElementById('btn-sel-tr2').addEventListener('click', () => {
+      currentTarget = 'TR2';
+      updateSimulationState();
+      controls.target.set(1.5, 1.2, 1.2);
+      controls.update();
+    });
+
+    document.getElementById('btn-sel-all').addEventListener('click', () => {
+      currentTarget = 'ALL';
+      updateSimulationState();
+      controls.target.set(0, 1.0, 0);
+      controls.update();
+    });
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    let lastTick = performance.now();
+    function animate(time) {
+      requestAnimationFrame(animate);
+
+      const deltaSec = (time - lastTick) / 1000;
+      lastTick = time;
+
+      if (isPlaying) {
+        const rate = (maxSimMinutes === 1440) ? 18.0 : 3.5;
+        simTimeMinutes += deltaSec * rate * playSpeed;
+        if (simTimeMinutes >= maxSimMinutes) {
+          simTimeMinutes = 0;
+        }
+        updateSimulationState();
+      }
+
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    animate(0);
+  </script>
+</body>
+</html>
